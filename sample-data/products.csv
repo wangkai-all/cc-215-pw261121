@@ -1,0 +1,11 @@
+id,name,categoryId,specQty,specUnit,baseUnit,onShelf,offShelf
+P01,纯牛奶 250ml×12盒,dairy,3000,ml,100ml,2025-01,
+P02,原味酸奶 100g×8杯,dairy,800,g,100g,2025-01,2025-06
+P03,原味酸奶 90g×8杯（新规格）,dairy,720,g,100g,2025-07,
+P04,香脆薯片 150g,snack,150,g,100g,2025-01,
+P05,洗衣液 2kg,household,2,kg,kg,2025-01,
+P06,红富士苹果（散装）,fresh,1,500g,500g,2025-01,
+P07,鲜鸡蛋 30枚,egg,30,枚,枚,2025-01,
+P08,进口黄油饼干 200g,snack,200,g,100g,2025-01,2025-05
+P09,柔顺洗发水 400ml,household,400,ml,100ml,2025-01,2025-09
+P10,清爽洗发水 450ml,household,450,ml,100ml,2025-09,

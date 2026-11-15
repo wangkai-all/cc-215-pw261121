@@ -1,0 +1,12 @@
+{
+  "name": "retail-price-index-tool",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "零售价格指数核对工具（本地 Web，完全虚构数据演示，非官方指数）",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "test": "node --test tests/*.test.mjs",
+    "gen-sample": "node scripts/gen-sample.mjs"
+  }
+}

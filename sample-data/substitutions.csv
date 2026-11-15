@@ -1,0 +1,3 @@
+id,from,to,type,switchPeriod,overlapPeriod,note
+SUB1,P02,P03,spec-change,2025-07,,规格缩小 100g×8→90g×8，按每100g单价直接衔接（可比单位价格已体现规格变化）
+SUB2,P09,P10,non-comparable-overlap,2025-10,2025-09,品牌与配方不同、不可直接比较；两产品2025-09均有报价，按重叠期单位价格比衔接

@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>零售价格指数核对工具（虚构数据演示）</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="app-header">
+  <div>
+    <h1>零售价格指数核对工具</h1>
+    <p class="subtitle">商品篮子核对 · 可比单位换算 · 固定篮子与链式指数 · 贡献分解 · 报价追溯</p>
+  </div>
+  <div class="disclaimer-badge" title="本工具使用完全虚构的零售数据，用于演示指数编制与核对方法，不复刻、不代表任何官方统计指数。">虚构数据演示 · 非官方指数</div>
+</header>
+
+<nav class="tabs" id="tabs" aria-label="功能页签">
+  <button data-tab="import" class="tab">数据导入</button>
+  <button data-tab="basket" class="tab">篮子核对</button>
+  <button data-tab="index" class="tab">指数计算</button>
+  <button data-tab="decomp" class="tab">贡献分解</button>
+  <button data-tab="trace" class="tab">报价追溯</button>
+  <button data-tab="coverage" class="tab">不可比与覆盖</button>
+  <button data-tab="versions" class="tab">版本与公式</button>
+</nav>
+
+<main>
+  <!-- 数据导入 -->
+  <section id="tab-import" class="tab-panel">
+    <div class="card">
+      <h2>导入数据</h2>
+      <p class="hint">支持单个 <code>dataset.json</code>，或一组 CSV（products / stores / quotes / basket / substitutions / store_replacements，按表头自动识别）。数据字段说明见 <code>README.md</code>。</p>
+      <div class="row gap">
+        <button id="btn-load-sample" class="btn primary">加载内置样例数据</button>
+        <label class="btn">
+          选择文件导入
+          <input type="file" id="file-input" multiple accept=".json,.csv" hidden>
+        </label>
+        <span class="hint" id="import-status"></span>
+      </div>
+      <div class="row gap wrap sample-links">
+        <span class="hint">样例文件：</span>
+        <a href="sample-data/dataset.json" download>dataset.json</a>
+        <a href="sample-data/products.csv" download>products.csv</a>
+        <a href="sample-data/stores.csv" download>stores.csv</a>
+        <a href="sample-data/quotes.csv" download>quotes.csv</a>
+        <a href="sample-data/basket.csv" download>basket.csv</a>
+        <a href="sample-data/substitutions.csv" download>substitutions.csv</a>
+        <a href="sample-data/store_replacements.csv" download>store_replacements.csv</a>
+      </div>
+      <div id="import-report"></div>
+    </div>
+    <div class="card">
+      <h2>当前数据集</h2>
+      <div id="dataset-summary"></div>
+    </div>
+  </section>
+
+  <!-- 篮子核对 -->
+  <section id="tab-basket" class="tab-panel">
+    <div class="card">
+      <h2>商品篮子核对</h2>
+      <p class="hint">所有报价已按规则 R1 换算为可比计量单位价格；标记列汇总该条目各期出现的特殊处理。</p>
+      <div id="basket-table"></div>
+    </div>
+    <div class="card">
+      <h2>替代关系（可勾选启用）</h2>
+      <div id="substitution-panel"></div>
+    </div>
+    <div class="card">
+      <h2>处理披露</h2>
+      <p class="hint">促销剔除、缺价估算、退市沿用、替代衔接、门店更替逐条列示，不静默处理。</p>
+      <div class="row gap">
+        <label class="hint">按规则筛选 <select id="disclosure-filter"><option value="">全部</option></select></label>
+      </div>
+      <div id="disclosure-list"></div>
+    </div>
+  </section>
+
+  <!-- 指数计算 -->
+  <section id="tab-index" class="tab-panel">
+    <div class="card">
+      <h2>计算设置</h2>
+      <div class="row gap wrap controls">
+        <label>基期 <select id="sel-base"></select></label>
+        <label>权重方案
+          <select id="sel-scheme">
+            <option value="laspeyres">基期支出加权（拉氏）</option>
+            <option value="paasche">报告期数量加权（帕氏）</option>
+            <option value="fisher">费雪理想指数</option>
+            <option value="custom">自定义权重（拉氏型）</option>
+          </select>
+        </label>
+        <label><input type="checkbox" id="chk-fixed" checked> 固定篮子指数</label>
+        <label><input type="checkbox" id="chk-chained" checked> 链式指数</label>
+        <button id="btn-save-version" class="btn">保存为版本</button>
+      </div>
+      <div id="custom-weights" class="hidden">
+        <h3>自定义权重</h3>
+        <p class="hint">留空或 0 表示使用基期支出权重；保存版本会记录当前权重。</p>
+        <div id="custom-weights-editor" class="row gap wrap"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>指数结果</h2>
+      <div id="index-tiles" class="tiles"></div>
+      <div id="index-chart"></div>
+      <details class="table-toggle" open><summary>数据表</summary><div id="index-table"></div></details>
+    </div>
+  </section>
+
+  <!-- 贡献分解 -->
+  <section id="tab-decomp" class="tab-panel">
+    <div class="card">
+      <h2>条目贡献（相对基期）</h2>
+      <div class="row gap">
+        <label>期次 <select id="sel-decomp-period"></select></label>
+      </div>
+      <p class="hint">各篮子条目对固定篮子（拉氏）指数偏离 100 的贡献（指数点），合计等于指数 − 100。</p>
+      <div id="decomp-chart"></div>
+      <div id="decomp-table"></div>
+    </div>
+    <div class="card">
+      <h2>价格变化 vs 商品结构变化（价值分解）</h2>
+      <p class="hint">销售额变化 ΔV 分解为价格效应（数量固定在基期）、结构效应（价格固定在基期）与交互效应，单位：元（可比计量单位口径）。</p>
+      <div id="decomp-stacked"></div>
+      <details class="table-toggle" open><summary>数据表</summary><div id="decomp-value-table"></div></details>
+    </div>
+  </section>
+
+  <!-- 报价追溯 -->
+  <section id="tab-trace" class="tab-panel">
+    <div class="card">
+      <h2>报价追溯</h2>
+      <div class="row gap">
+        <label>篮子条目 <select id="sel-trace-item"></select></label>
+      </div>
+      <div id="trace-item-info"></div>
+      <h3>入指数序列（可比单位价）</h3>
+      <div id="trace-series"></div>
+      <h3>门店原始报价明细</h3>
+      <div id="trace-cells"></div>
+    </div>
+  </section>
+
+  <!-- 不可比与覆盖 -->
+  <section id="tab-coverage" class="tab-panel">
+    <div class="card">
+      <h2>不可比项目</h2>
+      <p class="hint">无法按规则衔接的篮子条目单列于此，自起始期起退出指数计算。</p>
+      <div id="nc-table"></div>
+    </div>
+    <div class="card">
+      <h2>覆盖比例（可比条目权重 / 总权重）</h2>
+      <div id="coverage-chart"></div>
+      <details class="table-toggle" open><summary>数据表</summary><div id="coverage-table"></div></details>
+    </div>
+  </section>
+
+  <!-- 版本与公式 -->
+  <section id="tab-versions" class="tab-panel">
+    <div class="card">
+      <h2>修订版本</h2>
+      <p class="hint">每次"保存为版本"记录完整配置（基期、权重方案、启用的替代关系、规则版本）与结果摘要，可对比两个版本。版本保存在浏览器本地。</p>
+      <div id="version-list"></div>
+      <div id="version-compare"></div>
+    </div>
+    <div class="card">
+      <h2>计算公式</h2>
+      <div class="formulas">
+        <p><strong>可比单位换算（R1）</strong>：单位价 = 售价 ÷（规格量 × 换算系数），如 36 元 /（3000ml × 0.01）= 1.2 元/100ml。</p>
+        <p><strong>固定篮子拉氏指数</strong>：I<sub>L</sub>(t) = Σ w<sub>i0</sub>·(p<sub>it</sub>/p<sub>i0</sub>) / Σ w<sub>i0</sub>，w<sub>i0</sub> = p<sub>i0</sub>·q<sub>i0</sub>（基期支出，按可比单位计）。</p>
+        <p><strong>帕氏指数</strong>：I<sub>P</sub>(t) = Σ p<sub>it</sub>·q<sub>it</sub> / Σ p<sub>i0</sub>·q<sub>it</sub>。</p>
+        <p><strong>费雪指数</strong>：I<sub>F</sub> = √(I<sub>L</sub> × I<sub>P</sub>)。</p>
+        <p><strong>链式指数</strong>：I(t) = I(t−1) × link(t)，link(t) 为相邻两期可比条目的拉氏/帕氏/费雪环比；基期 = 100，向前后两个方向链接。</p>
+        <p><strong>条目贡献</strong>：c<sub>i</sub>(t) = (w<sub>i0</sub>/Σw) × (p<sub>it</sub>/p<sub>i0</sub> − 1) × 100（指数点），Σc<sub>i</sub> = I<sub>L</sub> − 100。</p>
+        <p><strong>价值分解</strong>：ΔV = Σ(p<sub>t</sub>−p<sub>0</sub>)q<sub>0</sub>（价格效应）+ Σ(q<sub>t</sub>−q<sub>0</sub>)p<sub>0</sub>（结构效应）+ Σ(p<sub>t</sub>−p<sub>0</sub>)(q<sub>t</sub>−q<sub>0</sub>)（交互效应）。</p>
+        <p><strong>覆盖率</strong>：当期可比条目的权重和 ÷ 篮子总权重。</p>
+      </div>
+    </div>
+    <div class="card">
+      <h2>处理规则（公开规则，版本 <span id="rules-version"></span>）</h2>
+      <div id="rules-list"></div>
+    </div>
+    <div class="card">
+      <h2>免责声明</h2>
+      <p>本工具为本地教学演示工具，使用完全虚构的零售数据；指数编制规则为教学化简版本，<strong>不复刻、不代表任何官方零售价格指数</strong>。计算结果不构成任何统计或决策依据。</p>
+    </div>
+  </section>
+</main>
+
+<footer class="app-footer">
+  <span>零售价格指数核对工具 · 本地运行 · 虚构数据</span>
+</footer>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
